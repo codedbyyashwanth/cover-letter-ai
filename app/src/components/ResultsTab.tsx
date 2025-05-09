@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { Check, Copy, Download } from 'lucide-react';
+import { Check, Copy, Download, Edit } from 'lucide-react';
 import { Button } from './ui/button';
 import { Textarea } from './ui/textarea';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from './ui/tabs';
 
 interface ResultsTabProps {
   resumeText: string;
@@ -14,6 +15,8 @@ const ResultsTab = ({ resumeText, jobDescription }: ResultsTabProps) => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedLetter, setGeneratedLetter] = useState('');
   const [copied, setCopied] = useState(false);
+  const [editableResumeText, setEditableResumeText] = useState(resumeText);
+  const [editableJobDescription, setEditableJobDescription] = useState(jobDescription);
   const [formData, setFormData] = useState({
     name: '',
     company: '',
@@ -71,75 +74,121 @@ ${formData.phone}
 
   return (
     <div className="py-4">
-      <h2 className="text-2xl font-bold text-center mb-4">Customize & Generate Cover Letter</h2>
+      <h2 className="text-2xl font-bold text-center mb-4">Review, Edit & Generate</h2>
       <p className="text-center text-gray-600 mb-6">
-        Add your details to personalize your cover letter
+        Review the extracted information and make any necessary changes before generating your cover letter
       </p>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-        <div>
-          <Label htmlFor="name">Your Name</Label>
-          <Input 
-            id="name" 
-            name="name" 
-            placeholder="John Doe" 
-            value={formData.name}
-            onChange={handleInputChange}
-          />
-        </div>
-        <div>
-          <Label htmlFor="company">Company Name</Label>
-          <Input 
-            id="company" 
-            name="company" 
-            placeholder="Acme Inc." 
-            value={formData.company}
-            onChange={handleInputChange}
-          />
-        </div>
-        <div>
-          <Label htmlFor="position">Position</Label>
-          <Input 
-            id="position" 
-            name="position" 
-            placeholder="Frontend Developer" 
-            value={formData.position}
-            onChange={handleInputChange}
-          />
-        </div>
-        <div>
-          <Label htmlFor="email">Your Email</Label>
-          <Input 
-            id="email" 
-            name="email" 
-            placeholder="john@example.com" 
-            value={formData.email}
-            onChange={handleInputChange}
-          />
-        </div>
-        <div>
-          <Label htmlFor="phone">Your Phone</Label>
-          <Input 
-            id="phone" 
-            name="phone" 
-            placeholder="+1 123-456-7890" 
-            value={formData.phone}
-            onChange={handleInputChange}
-          />
-        </div>
-      </div>
-      
-      <div className="mb-6">
-        <Label htmlFor="additionalNotes">Additional Notes</Label>
-        <Textarea 
-          id="additionalNotes" 
-          name="additionalNotes" 
-          placeholder="Any additional information you'd like to include..." 
-          value={formData.additionalNotes}
-          onChange={handleInputChange}
-          className="h-24"
-        />
-      </div>
+      <Tabs defaultValue="extracted-data" className="mb-6">
+        <TabsList className="w-full">
+          <TabsTrigger value="extracted-data" className="flex-1">Extracted Resume Data</TabsTrigger>
+          <TabsTrigger value="job-description" className="flex-1">Job Description</TabsTrigger>
+          <TabsTrigger value="personal-info" className="flex-1">Personal Details</TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="extracted-data" className="mt-4">
+          <div className="mb-4">
+            <div className="flex justify-between items-center mb-2">
+              <h3 className="text-lg font-semibold">Extracted Resume Information</h3>
+              <span className="text-sm text-gray-500">
+                <Edit className="w-4 h-4 inline mr-1" />
+                Edit as needed
+              </span>
+            </div>
+            <Textarea 
+              value={editableResumeText}
+              onChange={(e) => setEditableResumeText(e.target.value)}
+              className="min-h-[300px] font-mono text-sm"
+              placeholder="No resume data extracted. Please go back to step 1 and upload your resume."
+            />
+          </div>
+        </TabsContent>
+        
+        <TabsContent value="job-description" className="mt-4">
+          <div className="mb-4">
+            <div className="flex justify-between items-center mb-2">
+              <h3 className="text-lg font-semibold">Job Description</h3>
+              <span className="text-sm text-gray-500">
+                <Edit className="w-4 h-4 inline mr-1" />
+                Edit as needed
+              </span>
+            </div>
+            <Textarea 
+              value={editableJobDescription}
+              onChange={(e) => setEditableJobDescription(e.target.value)}
+              className="min-h-[300px] font-mono text-sm"
+              placeholder="No job description provided. Please go back to step 2 and enter the job description."
+            />
+          </div>
+        </TabsContent>
+        
+        <TabsContent value="personal-info" className="mt-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div>
+              <Label htmlFor="name">Your Name</Label>
+              <Input 
+                id="name" 
+                name="name" 
+                placeholder="John Doe" 
+                value={formData.name}
+                onChange={handleInputChange}
+              />
+            </div>
+            <div>
+              <Label htmlFor="company">Company Name</Label>
+              <Input 
+                id="company" 
+                name="company" 
+                placeholder="Acme Inc." 
+                value={formData.company}
+                onChange={handleInputChange}
+              />
+            </div>
+            <div>
+              <Label htmlFor="position">Position</Label>
+              <Input 
+                id="position" 
+                name="position" 
+                placeholder="Frontend Developer" 
+                value={formData.position}
+                onChange={handleInputChange}
+              />
+            </div>
+            <div>
+              <Label htmlFor="email">Your Email</Label>
+              <Input 
+                id="email" 
+                name="email" 
+                placeholder="john@example.com" 
+                value={formData.email}
+                onChange={handleInputChange}
+              />
+            </div>
+            <div>
+              <Label htmlFor="phone">Your Phone</Label>
+              <Input 
+                id="phone" 
+                name="phone" 
+                placeholder="+1 123-456-7890" 
+                value={formData.phone}
+                onChange={handleInputChange}
+              />
+            </div>
+          </div>
+          
+          <div className="mb-4">
+            <Label htmlFor="additionalNotes">Additional Notes</Label>
+            <Textarea 
+              id="additionalNotes" 
+              name="additionalNotes" 
+              placeholder="Any additional information you'd like to include..." 
+              value={formData.additionalNotes}
+              onChange={handleInputChange}
+              className="h-24"
+            />
+          </div>
+        </TabsContent>
+      </Tabs>
       
       <div className="mb-6 text-center">
         <Button 

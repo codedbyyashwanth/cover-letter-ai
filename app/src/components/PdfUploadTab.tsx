@@ -80,18 +80,6 @@ const PdfUploadTab = ({ onPdfProcessed }: PdfUploadTabProps) => {
     }
   };
 
-  const handleContinue = () => {
-    if (fileName) {
-      onPdfProcessed({
-        text: "Sample extracted text", // This would normally come from the PDF parsing
-        pageCount: 1,
-        isLoading: false
-      });
-    } else {
-      setError('Please upload a resume first');
-    }
-  };
-
   return (
     <div className="py-4">
       <h2 className="text-2xl font-bold text-center mb-4">Upload Your Resume</h2>
@@ -140,21 +128,6 @@ const PdfUploadTab = ({ onPdfProcessed }: PdfUploadTabProps) => {
             <span className="text-sm">{error}</span>
           </div>
         )}
-      </div>
-      
-      <div className="mt-6 text-center">
-        <p className="text-sm text-gray-500 mb-4">
-          We will never share your data with 3rd parties or use it for AI model training.
-        </p>
-        
-        <Button 
-          className="w-full md:w-auto"
-          disabled={isLoading || !fileName}
-          onClick={handleContinue}
-        >
-          {isLoading ? 'Processing...' : 'Continue'} 
-          <ArrowRight className="ml-2 w-4 h-4" />
-        </Button>
       </div>
     </div>
   );
