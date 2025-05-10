@@ -12,8 +12,21 @@ app.use(cors());
 app.use(bodyParser.json());
 
 // Function to generate cover letter using OpenAI's cheapest model
-async function generateCoverLetter(resumeData) {
+async function generateCoverLetter(resumeData, jobData) {
     try {
+        // Extract resume and job information
+        const { name, profile, experience } = resumeData;
+        const { company, position, requirements } = jobData;
+        
+        // Get skills from resume
+        let skills = [];
+        if (resumeData.skills) {
+            if (resumeData.skills.languages) skills.push(...resumeData.skills.languages);
+            if (resumeData.skills.frontend) skills.push(...resumeData.skills.frontend);
+            if (resumeData.skills.backend) skills.push(...resumeData.skills.backend);
+            if (resumeData.skills.other) skills.push(...resumeData.skills.other);
+        }
+        
         // Use OpenAI's gpt-3.5-turbo which is their most cost-effective model
         const response = await axios.post(
             'https://api.openai.com/v1/chat/completions',
@@ -26,16 +39,23 @@ async function generateCoverLetter(resumeData) {
                 },
                 {
                     role: 'user',
-                    content: `Generate a professional cover letter for a job application based on the following resume information:
-                    Name: ${resumeData.name}
-                    Profile: ${resumeData.profile}
-                    Skills: ${resumeData.skills.join(', ')}
+                    content: `Generate a professional cover letter for a job application based on the following information:
                     
-                    The cover letter should be one page, professional in tone, and highlight the candidate's skills and experiences mentioned in their profile.
-                    Do not include date, address or recipient information.`
+                    Resume Information:
+                    Name: ${name}
+                    Profile: ${profile}
+                    Skills: ${skills.join(', ')}
+                    
+                    Job Information:
+                    Company: ${company}
+                    Position: ${position}
+                    Requirements: ${requirements ? requirements.join(', ') : ''}
+                    
+                    The cover letter should be one page, professional in tone, and highlight how the candidate's skills and experiences align with the job requirements.
+                    Include today's date and a formal letter format with greeting and signature.`
                 }
                 ],
-                max_tokens: 400, // Limiting tokens to reduce cost
+                max_tokens: 600, // Increased tokens for a full letter
                 temperature: 0.7
             },
             {
@@ -50,46 +70,90 @@ async function generateCoverLetter(resumeData) {
     } catch (error) {
         console.error('Error generating cover letter with OpenAI:', error);
         // Fallback to template if API call fails
-        return generateFallbackCoverLetter(resumeData);
+        return generateFallbackCoverLetter(resumeData, jobData);
     }
 }
 
 // Simple template-based fallback for cover letter generation
-function generateFallbackCoverLetter(resumeData) {
-    const { name, profile, skills } = resumeData;
+function generateFallbackCoverLetter(resumeData, jobData) {
+    // Format date
+    const today = new Date();
+    const formattedDate = today.toLocaleDateString('en-US', { 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric' 
+    });
+    
+    // Extract data
+    const { name, profile, experience } = resumeData;
+    const { company, position } = jobData;
+    
+    // Get skills
+    let skills = [];
+    if (resumeData.skills) {
+        if (resumeData.skills.languages) skills.push(...resumeData.skills.languages);
+        if (resumeData.skills.frontend) skills.push(...resumeData.skills.frontend);
+        if (resumeData.skills.backend) skills.push(...resumeData.skills.backend);
+        if (resumeData.skills.other) skills.push(...resumeData.skills.other);
+    }
+    
+    // Get most recent experience
+    const recentExperience = experience && experience.length > 0 ? experience[0] : null;
+    
+    // Get achievement bullets from experience
+    const achievements = recentExperience?.description || [
+        'Successfully delivered projects on time and within budget',
+        'Collaborated effectively with cross-functional teams',
+        'Implemented best practices in development and testing'
+    ];
     
     return `
-    Dear Hiring Manager,
+${formattedDate}
 
-    I am writing to express my interest in the open position at your company. As a ${skills[0] || 'professional'} with experience in ${skills.slice(1, 3).join(' and ') || 'various areas'}, I believe I would be a valuable addition to your team.
+Hiring Manager
+${company}
+${jobData.location || 'Location'}
 
-    ${profile || 'I am a dedicated professional with a strong track record of success in my field.'}
+Dear Hiring Manager at ${company},
 
-    My key skills include ${skills.slice(0, 5).join(', ') || 'various technical and professional abilities'} which I have developed through my professional experiences. I am confident that these skills, combined with my passion for excellence, would allow me to make significant contributions to your organization.
+I am writing to express my strong interest in the ${position} position at ${company}. With my background in ${recentExperience?.position || 'software development'} and experience with ${skills.slice(0, 3).join(', ')}, I believe I would be a valuable addition to your team.
 
-    I look forward to the opportunity to discuss how my background and skills would be a good match for this position. Thank you for your consideration.
+${profile || `As a dedicated professional, I have consistently delivered high-quality results while focusing on efficiency and collaboration.`}
 
-    Sincerely,
-    ${name || 'Candidate'}`;
+During my time at ${recentExperience?.company || 'my previous company'}, I have:
+${achievements.map(desc => `- ${desc}`).join('\n')}
+
+I am particularly excited about the opportunity to join ${company} because of your reputation for innovation and commitment to excellence. I believe my skills and experience align well with what you're looking for in a ${position}.
+
+I would welcome the opportunity to discuss how my background, skills, and achievements can benefit your team. Thank you for considering my application.
+
+Sincerely,
+${name || 'Candidate'}
+${resumeData.email || ''}
+${resumeData.phone || ''}`;
 }
 
 // Route to generate cover letter
 app.post('/api/generate-cover-letter', async (req, res) => {
     try {
-        const resumeData = req.body;
         
-        if (!resumeData) {
-            return res.status(400).json({ error: 'No resume data provided' });
+        // Extract resume and job description from request
+        const { resume, jobDescription } = req.body;
+        
+        if (!resume || !jobDescription) {
+            return res.status(400).json({ 
+                error: 'Missing required data. Request must include both resume and jobDescription objects.' 
+            });
         }
         
         // Check if OpenAI API key is available
         if (!process.env.OPENAI_API_KEY) {
             console.warn('Warning: OpenAI API key not found. Using fallback template method.');
-            const coverLetter = generateFallbackCoverLetter(resumeData);
+            const coverLetter = generateFallbackCoverLetter(resume, jobDescription);
             return res.json({ coverLetter });
         }
         
-        const coverLetter = await generateCoverLetter(resumeData);
+        const coverLetter = await generateCoverLetter(resume, jobDescription);
         res.json({ coverLetter });
     } catch (error) {
         console.error('Error in cover letter generation endpoint:', error);

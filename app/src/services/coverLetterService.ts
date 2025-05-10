@@ -1,8 +1,5 @@
 import { Resume, JobDescription, CoverLetterResponse } from '../types/resume';
 
-// Configuration flag - set to false to use the sample generator for testing
-const USE_API = true;
-
 /**
  * Generate a cover letter based on resume and job description
  */
@@ -10,42 +7,32 @@ export const generateCoverLetter = async (
   resume: Resume, 
   jobDescription: JobDescription
 ): Promise<string> => {
-  // If API usage is disabled, use the sample generator directly
-  if (!USE_API) {
-    console.log('API usage is disabled. Using sample generator.');
-    return generateSampleCoverLetter(resume, jobDescription);
-  }
-  
   try {
-    // Ensure the API URL is correctly set
-    const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
-    const endpoint = '/api/generate-cover-letter';
-    const url = `${API_URL}${endpoint}`;
+    // Create a combined object matching your backend's expected format
+    const resumeData = {
+      resume,
+      jobDescription
+    };
     
-    console.log(`Attempting to call API at: ${url}`);
-    
-    const response = await fetch(url, {
+    // Use direct URL without environment variables
+    const response = await fetch('http://localhost:3001/api/generate-cover-letter', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        resume,
-        jobDescription
-      }),
+      body: JSON.stringify(resumeData),
     });
     
     if (!response.ok) {
-      console.error(`API error: ${response.status} ${response.statusText}`);
-      throw new Error(`Error generating cover letter: ${response.statusText}`);
+      throw new Error(`Failed to generate cover letter: ${response.statusText}`);
     }
     
-    const data: CoverLetterResponse = await response.json();
-    console.log('Successfully received cover letter from API');
+    const data = await response.json();
     return data.coverLetter;
   } catch (error) {
     console.error('Failed to generate cover letter:', error);
-    console.log('Falling back to sample generator');
+    
+    // Fallback to sample generator if API fails
     return generateSampleCoverLetter(resume, jobDescription);
   }
 };

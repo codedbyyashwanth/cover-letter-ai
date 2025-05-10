@@ -5,7 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { Button } from './ui/button';
 import { Textarea } from './ui/textarea';
 import { Resume, JobDescription } from '../types/resume';
-import { generateSampleCoverLetter } from '../services/coverLetterService';
+import { generateCoverLetter } from '../services/coverLetterService';
 
 interface ResultsViewerProps {
     resume: Resume;
@@ -20,22 +20,27 @@ const ResultsViewer = ({ resume, jobDescription, rawResumeText }: ResultsViewerP
     const [coverLetter, setCoverLetter] = useState('');
     const [isGenerating, setIsGenerating] = useState(false);
     const [copied, setCopied] = useState(false);
+    const [error, setError] = useState<string | null>(null);
   
     useEffect(() => {
-        // Generate sample cover letter on component mount
+        // Generate cover letter on component mount
         handleGenerateCoverLetter();
     }, []);
     
-    const handleGenerateCoverLetter = () => {
+    const handleGenerateCoverLetter = async () => {
         setIsGenerating(true);
+        setError(null);
         
-        // In a real application, you would call your API here
-        // For demo purposes, we're using a sample generator
-        setTimeout(() => {
-        const letter = generateSampleCoverLetter(resume, jobDescription);
-        setCoverLetter(letter);
-        setIsGenerating(false);
-        }, 1500);
+        try {
+            // Use the actual generateCoverLetter function that calls the API
+            const letter = await generateCoverLetter(resume, jobDescription);
+            setCoverLetter(letter);
+        } catch (err) {
+            console.error('Error generating cover letter:', err);
+            setError('Failed to generate cover letter. Please try again.');
+        } finally {
+            setIsGenerating(false);
+        }
     };
     
     const handleCopy = () => {
@@ -272,6 +277,18 @@ const ResultsViewer = ({ resume, jobDescription, rawResumeText }: ResultsViewerP
                 <div className="py-20 flex flex-col items-center justify-center text-gray-500">
                     <RefreshCw className="w-8 h-8 mb-4 animate-spin" />
                     <p>Generating your cover letter...</p>
+                </div>
+                ) : error ? (
+                <div className="py-10 flex flex-col items-center justify-center text-red-500">
+                    <p>{error}</p>
+                    <Button 
+                        variant="outline"
+                        size="sm"
+                        onClick={handleGenerateCoverLetter}
+                        className="mt-4"
+                    >
+                        Try Again
+                    </Button>
                 </div>
                 ) : (
                 <Textarea 
